@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>RailGuard — Railway Crack Detection System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+:root{--bg:#0a0e1a;--surface:#111827;--surface2:#1a2235;--surface3:#1f2d42;--border:#1e3050;--border2:#243650;--accent:#3b82f6;--accent2:#60a5fa;--text:#e2e8f0;--text2:#94a3b8;--text3:#64748b;--font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;--r:10px;--r-sm:6px;}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:var(--surface);}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+/* HEADER */
+.header{background:var(--surface);border-bottom:1px solid var(--border);height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;position:sticky;top:0;z-index:100;}
+.logo{display:flex;align-items:center;gap:10px;font-size:1.15rem;font-weight:700;color:#fff;letter-spacing:-0.01em;}
+.logo-badge{background:var(--accent);color:#fff;font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;}
+.hdr-right{display:flex;align-items:center;gap:20px;font-size:0.78rem;color:var(--text2);}
+.live-dot{width:7px;height:7px;background:#22c55e;border-radius:50%;display:inline-block;margin-right:5px;animation:pulse 2s infinite;box-shadow:0 0 6px #22c55e;}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.model-chip{background:var(--surface2);border:1px solid var(--border2);border-radius:20px;padding:4px 12px;font-family:var(--mono);font-size:.72rem;color:var(--accent2);}
+
+/* LAYOUT */
+.layout{display:grid;grid-template-columns:1fr 360px;gap:20px;max-width:1380px;margin:0 auto;padding:24px 20px;}
+@media(max-width:960px){.layout{grid-template-columns:1fr;}}
+
+/* CARD */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;}
+.card+.card{margin-top:16px;}
+.card-head{background:var(--surface2);border-bottom:1px solid var(--border);padding:11px 18px;display:flex;align-items:center;justify-content:space-between;font-size:.72rem;font-weight:600;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;}
+.card-body{padding:20px;}
+
+/* DROP ZONE */
+#drop-zone{border:2px dashed var(--border2);border-radius:var(--r);padding:52px 24px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(59,130,246,.02);}
+#drop-zone:hover,#drop-zone.drag{border-color:var(--accent);background:rgba(59,130,246,.06);}
+#drop-zone .dz-icon{font-size:2.8rem;display:block;margin-bottom:14px;}
+#drop-zone h3{font-size:1rem;font-weight:600;color:var(--text);margin-bottom:6px;}
+#drop-zone p{color:var(--text2);font-size:.82rem;}
+.fmt-row{display:flex;gap:6px;justify-content:center;margin-top:14px;flex-wrap:wrap;}
+.fmt{background:var(--surface2);border:1px solid var(--border2);border-radius:4px;padding:3px 9px;font-family:var(--mono);font-size:.68rem;color:var(--text3);}
+#file-input{display:none;}
+
+/* PREVIEW */
+#preview-sec{display:none;margin-top:18px;}
+.img-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;}
+@media(max-width:580px){.img-grid{grid-template-columns:1fr;}}
+.img-frame{position:relative;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border);background:#000;min-height:180px;display:flex;align-items:center;justify-content:center;}
+.img-frame img{width:100%;max-height:380px;object-fit:contain;display:block;}
+.img-tag{position:absolute;top:8px;left:8px;background:rgba(0,0,0,.75);color:#fff;font-size:.65rem;font-weight:600;letter-spacing:.06em;padding:3px 8px;border-radius:4px;text-transform:uppercase;}
+.ph{color:var(--text3);font-size:.8rem;}
+
+/* BUTTON */
+#run-btn{display:none;width:100%;margin-top:16px;background:linear-gradient(135deg,#1d4ed8,#3b82f6);color:#fff;border:none;border-radius:var(--r-sm);padding:14px;font-size:.95rem;font-weight:600;cursor:pointer;transition:opacity .15s;letter-spacing:.02em;}
+#run-btn:hover:not(:disabled){opacity:.88;}
+#run-btn:disabled{opacity:.5;cursor:not-allowed;}
+
+/* LOADER */
+#loader{display:none;text-align:center;padding:32px 0;}
+.track{height:3px;background:var(--border);border-radius:2px;overflow:hidden;max-width:220px;margin:12px auto;}
+.track-bar{height:100%;background:var(--accent);border-radius:2px;animation:slide 1.8s ease-in-out infinite;}
+@keyframes slide{0%{width:0;margin-left:0}50%{width:55%;margin-left:22%}100%{width:0;margin-left:100%}}
+.ld-msg{color:var(--text2);font-size:.8rem;font-family:var(--mono);animation:pulse 1.2s infinite;}
+
+/* SEVERITY BANNER */
+#result-sec{display:none;margin-top:18px;}
+.sev-banner{border-radius:var(--r-sm);padding:18px 20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;position:relative;overflow:hidden;}
+.sev-banner::before{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.05);}
+.sev-big-icon{font-size:2.2rem;z-index:1;}
+.sev-info{flex:1;z-index:1;}
+.sev-label{font-size:1.1rem;font-weight:700;letter-spacing:-0.01em;}
+.sev-risk{font-size:.8rem;margin-top:4px;opacity:.85;line-height:1.4;}
+.sev-CRITICAL{background:rgba(239,68,68,.15);border:1px solid rgba(239,68,68,.35);color:#fca5a5;}
+.sev-HIGH{background:rgba(249,115,22,.13);border:1px solid rgba(249,115,22,.35);color:#fdba74;}
+.sev-MODERATE{background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.3);color:#fde047;}
+.sev-LOW{background:rgba(59,130,246,.13);border:1px solid rgba(59,130,246,.35);color:#93c5fd;}
+.sev-NO_CRACK{background:rgba(34,197,94,.12);border:1px solid rgba(34,197,94,.3);color:#86efac;}
+
+/* STATS */
+.stats{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;}
+.stat{flex:1;min-width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;text-align:center;}
+.stat-val{font-size:1.35rem;font-weight:700;color:var(--accent2);font-family:var(--mono);}
+.stat-lbl{font-size:.68rem;color:var(--text3);margin-top:3px;text-transform:uppercase;letter-spacing:.05em;}
+
+/* DETECTION TABLE */
+.det-wrap{margin-bottom:16px;}
+.sec-title{font-size:.72rem;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+.det-table{width:100%;border-collapse:collapse;}
+.det-table th{background:var(--surface2);padding:8px 12px;font-size:.7rem;font-weight:600;color:var(--text3);text-align:left;border-bottom:1px solid var(--border);letter-spacing:.05em;text-transform:uppercase;}
+.det-table td{padding:7px 12px;font-size:.8rem;border-bottom:1px solid rgba(30,48,80,.6);font-family:var(--mono);}
+.det-table tr:last-child td{border-bottom:none;}
+.conf-pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:.72rem;font-weight:600;}
+.conf-high{background:rgba(239,68,68,.15);color:#fca5a5;}
+.conf-med{background:rgba(234,179,8,.13);color:#fde047;}
+.conf-low{background:rgba(34,197,94,.13);color:#86efac;}
+.sev-badge{padding:2px 10px;border-radius:20px;font-size:.7rem;font-weight:600;letter-spacing:.04em;}
+.badge-CRITICAL{background:rgba(239,68,68,.15);color:#fca5a5;border:1px solid rgba(239,68,68,.25);}
+.badge-HIGH{background:rgba(249,115,22,.13);color:#fdba74;border:1px solid rgba(249,115,22,.25);}
+.badge-MODERATE{background:rgba(234,179,8,.12);color:#fde047;border:1px solid rgba(234,179,8,.2);}
+.badge-LOW{background:rgba(59,130,246,.13);color:#93c5fd;border:1px solid rgba(59,130,246,.2);}
+.badge-NO_CRACK{background:rgba(34,197,94,.12);color:#86efac;border:1px solid rgba(34,197,94,.2);}
+
+/* ADVISORY */
+.advisory{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:18px;}
+.adv-header{font-size:.72rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;display:flex;align-items:center;gap:7px;}
+.action-list{list-style:none;}
+.action-list li{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid rgba(30,48,80,.5);font-size:.83rem;line-height:1.55;color:var(--text);}
+.action-list li:last-child{border-bottom:none;}
+.action-num{flex-shrink:0;width:22px;height:22px;background:var(--accent);border-radius:50%;font-size:.68rem;font-weight:700;display:flex;align-items:center;justify-content:center;color:#fff;margin-top:1px;}
+.info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}
+.info-cell{background:var(--surface3);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 13px;}
+.info-lbl{font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.info-val{font-size:.8rem;color:var(--text);margin-top:3px;line-height:1.4;}
+.info-full{grid-column:1/-1;}
+
+/* SIDEBAR */
+.sidebar{display:flex;flex-direction:column;gap:16px;}
+.model-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(30,48,80,.5);font-size:.82rem;}
+.model-row:last-child{border-bottom:none;}
+.mk{color:var(--text2);}
+.mv{font-family:var(--mono);font-size:.74rem;color:var(--text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hist-list{max-height:400px;overflow-y:auto;}
+.hist-item{display:flex;gap:10px;align-items:center;padding:8px;border-radius:var(--r-sm);cursor:pointer;border-bottom:1px solid rgba(30,48,80,.4);transition:background .15s;}
+.hist-item:hover{background:var(--surface2);}
+.hist-item:last-child{border-bottom:none;}
+.hist-thumb{width:50px;height:38px;object-fit:cover;border-radius:4px;border:1px solid var(--border);flex-shrink:0;}
+.hist-sev{font-size:.8rem;font-weight:600;}
+.hist-time{font-size:.68rem;color:var(--text3);margin-top:2px;}
+.hist-sev.CRITICAL{color:#fca5a5;}
+.hist-sev.HIGH{color:#fdba74;}
+.hist-sev.MODERATE{color:#fde047;}
+.hist-sev.LOW{color:#93c5fd;}
+.hist-sev.NO_CRACK{color:#86efac;}
+.empty-state{text-align:center;padding:30px;color:var(--text3);font-size:.82rem;}
+.icon-btn{background:none;border:1px solid var(--border2);border-radius:4px;color:var(--text3);padding:3px 10px;font-size:.7rem;cursor:pointer;transition:all .15s;}
+.icon-btn:hover{border-color:var(--text2);color:var(--text);}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo"> RailGuard <span class="logo-badge">AI Detection</span></div>
+  <div class="hdr-right">
+    <span><span class="live-dot"></span>System Online</span>
+    <span class="model-chip" id="model-chip">Loading…</span>
+  </div>
+</header>
+
+<div class="layout">
+  <div>
+    <!-- Upload -->
+    <div class="card">
+      <div class="card-head"><span> Image Analysis</span></div>
+      <div class="card-body">
+        <div id="drop-zone">
+          <span class="dz-icon"></span>
+          <h3>Upload Railway Track Image</h3>
+          <p>Drag &amp; drop here, or click to select a file</p>
+          <div class="fmt-row">
+            <span class="fmt">JPG</span><span class="fmt">PNG</span><span class="fmt">BMP</span><span class="fmt">TIFF</span>
+          </div>
+          <input type="file" id="file-input" accept=".jpg,.jpeg,.png,.bmp,.tif,.tiff"/>
+        </div>
+        <div id="preview-sec">
+          <div class="img-grid">
+            <div class="img-frame"><span class="img-tag">Original</span><img id="orig-img" src="" alt=""/></div>
+            <div class="img-frame">
+              <span class="img-tag">Analysed</span>
+              <img id="ann-img" src="" alt="" style="display:none"/>
+              <span class="ph" id="ann-ph">awaiting analysis…</span>
+            </div>
+          </div>
+        </div>
+        <button id="run-btn"> Run Crack Detection</button>
+        <div id="loader">
+          <div class="track"><div class="track-bar"></div></div>
+          <div class="ld-msg" id="ld-msg">Running YOLOv8…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Result -->
+    <div id="result-sec">
+      <div class="card">
+        <div class="card-head"> Detection Report</div>
+        <div class="card-body">
+          <div id="sev-banner" class="sev-banner">
+            <span class="sev-big-icon" id="sev-icon">—</span>
+            <div class="sev-info">
+              <div class="sev-label" id="sev-label">—</div>
+              <div class="sev-risk"  id="sev-risk">—</div>
+            </div>
+          </div>
+          <div class="stats">
+            <div class="stat"><div class="stat-val" id="st-n">0</div><div class="stat-lbl">Cracks Found</div></div>
+            <div class="stat"><div class="stat-val" id="st-c">—</div><div class="stat-lbl">Max Conf.</div></div>
+            <div class="stat"><div class="stat-val" id="st-a">—</div><div class="stat-lbl">Max Area</div></div>
+            <div class="stat"><div class="stat-val" id="st-t">—</div><div class="stat-lbl">Time</div></div>
+          </div>
+          <div id="det-wrap" class="det-wrap" style="display:none">
+            <div class="sec-title">Detected objects</div>
+            <table class="det-table">
+              <thead><tr><th>#</th><th>Class</th><th>Confidence</th><th>Area %</th><th>Severity</th></tr></thead>
+              <tbody id="det-tbody"></tbody>
+            </table>
+          </div>
+          <div class="advisory">
+            <div class="adv-header"> Advisory &amp; Action Plan</div>
+            <ul class="action-list" id="action-list"></ul>
+            <div class="info-grid">
+              <div class="info-cell"><div class="info-lbl">Timeline</div><div class="info-val" id="i-tl">—</div></div>
+              <div class="info-cell"><div class="info-lbl">Notifying Authority</div><div class="info-val" id="i-au">—</div></div>
+              <div class="info-cell info-full"><div class="info-lbl">Risk Assessment</div><div class="info-val" id="i-rk">—</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="card">
+      <div class="card-head"> Model Status</div>
+      <div class="card-body" style="padding:12px 16px">
+        <div class="model-row"><span class="mk">Type</span><span class="mv">YOLOv8</span></div>
+        <div class="model-row"><span class="mk">Status</span><span class="mv" style="color:#22c55e">● Active</span></div>
+        <div class="model-row"><span class="mk">Model file</span><span class="mv" id="mi-name">—</span></div>
+        <div class="model-row"><span class="mk">Confidence thr.</span><span class="mv" id="mi-conf">—</span></div>
+      </div>
+    </div>
+    <div class="card" style="flex:1">
+      <div class="card-head">
+         Detection History
+        <button class="icon-btn" onclick="clearHistory()">Clear</button>
+      </div>
+      <div class="card-body" style="padding:8px 12px">
+        <div class="hist-list" id="hist-list"><div class="empty-state">No detections yet</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const dz=document.getElementById('drop-zone'),fi=document.getElementById('file-input'),runBtn=document.getElementById('run-btn'),prevSec=document.getElementById('preview-sec'),resSec=document.getElementById('result-sec'),loader=document.getElementById('loader'),ldMsg=document.getElementById('ld-msg'),origImg=document.getElementById('orig-img'),annImg=document.getElementById('ann-img'),annPh=document.getElementById('ann-ph');
+let selFile=null;
+const MSGS=['Preprocessing image…','Running YOLOv8 inference…','Classifying crack severity…','Generating advisory report…','Finalising results…'];
+
+dz.addEventListener('click',()=>fi.click());
+fi.addEventListener('change',e=>load(e.target.files[0]));
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag');if(e.dataTransfer.files[0])load(e.dataTransfer.files[0]);});
+
+function load(file){
+  if(!file)return;
+  selFile=file;
+  origImg.src=URL.createObjectURL(file);
+  prevSec.style.display='block';
+  annImg.style.display='none';
+  annPh.style.display='block';
+  runBtn.style.display='block';
+  resSec.style.display='none';
+}
+
+runBtn.addEventListener('click',async()=>{
+  if(!selFile)return;
+  runBtn.disabled=true;
+  loader.style.display='block';
+  resSec.style.display='none';
+  let mi=0;
+  const iv=setInterval(()=>{ldMsg.textContent=MSGS[mi++%MSGS.length];},900);
+  try{
+    const fd=new FormData();fd.append('file',selFile);
+    const res=await fetch('/api/detect',{method:'POST',body:fd});
+    const data=await res.json();
+    clearInterval(iv);
+    if(!res.ok)throw new Error(data.error||'Detection failed');
+    render(data);loadHistory();
+  }catch(e){clearInterval(iv);alert('Error: '+e.message);}
+  finally{loader.style.display='none';runBtn.disabled=false;}
+});
+
+function getDetSev(det){
+  const c=det.confidence,a=det.area_frac;
+  if(c>=0.80&&a>=0.05)return'CRITICAL';
+  if(c>=0.65&&a>=0.02)return'HIGH';
+  if(c>=0.45)return'MODERATE';
+  return'LOW';
+}
+
+function render(d){
+  annImg.src=d.annotated_url+'?t='+Date.now();
+  annImg.style.display='block';annPh.style.display='none';
+  const sev=d.severity,adv=d.advisory,dets=d.detections||[];
+
+  const banner=document.getElementById('sev-banner');
+  banner.className='sev-banner sev-'+sev;
+  document.getElementById('sev-icon').textContent=adv.icon;
+  document.getElementById('sev-label').textContent=sev.replace('_',' ');
+  document.getElementById('sev-risk').textContent=adv.risk_summary;
+
+  const maxConf=dets.length?Math.max(...dets.map(x=>x.confidence)):0;
+  const maxArea=dets.length?Math.max(...dets.map(x=>x.area_frac)):0;
+  document.getElementById('st-n').textContent=d.detection_count;
+  document.getElementById('st-c').textContent=dets.length?(maxConf*100).toFixed(1)+'%':'—';
+  document.getElementById('st-a').textContent=dets.length?(maxArea*100).toFixed(2)+'%':'—';
+  document.getElementById('st-t').textContent=new Date(d.timestamp).toLocaleTimeString();
+
+  const tbody=document.getElementById('det-tbody');tbody.innerHTML='';
+  if(dets.length){
+    document.getElementById('det-wrap').style.display='block';
+    dets.forEach((det,i)=>{
+      const conf=(det.confidence*100).toFixed(1);
+      const cc=det.confidence>=0.8?'high':det.confidence>=0.5?'med':'low';
+      const ds=getDetSev(det);
+      tbody.innerHTML+=`<tr><td>${i+1}</td><td>${det.class_name}</td><td><span class="conf-pill conf-${cc}">${conf}%</span></td><td>${(det.area_frac*100).toFixed(3)}%</td><td><span class="sev-badge badge-${ds}">${ds}</span></td></tr>`;
+    });
+  }else{document.getElementById('det-wrap').style.display='none';}
+
+  const al=document.getElementById('action-list');
+  al.innerHTML=(adv.actions||[]).map((a,i)=>`<li><span class="action-num">${i+1}</span><span>${a}</span></li>`).join('');
+  document.getElementById('i-tl').textContent=adv.timeline||'—';
+  document.getElementById('i-au').textContent=adv.authority||'—';
+  document.getElementById('i-rk').textContent=adv.risk_summary||'—';
+  resSec.style.display='block';
+  resSec.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+async function loadHistory(){
+  try{
+    const res=await fetch('/api/history');const data=await res.json();
+    const el=document.getElementById('hist-list');
+    if(!data.length){el.innerHTML='<div class="empty-state">No detections yet</div>';return;}
+    el.innerHTML=data.slice(0,25).map(h=>`<div class="hist-item"><img class="hist-thumb" src="${h.annotated_url}" onerror="this.src='${h.original_url}'"/><div><div class="hist-sev ${h.severity}">${h.severity.replace('_',' ')}</div><div class="hist-time">${new Date(h.timestamp).toLocaleString()}</div></div></div>`).join('');
+  }catch(e){}
+}
+async function clearHistory(){await fetch('/api/history/clear',{method:'POST'});loadHistory();}
+async function loadModelInfo(){
+  try{
+    const res=await fetch('/api/model-info');const data=await res.json();
+    const name=data.model_path.replace(/\\/g,'/').split('/').pop();
+    document.getElementById('mi-name').textContent=name;
+    document.getElementById('mi-conf').textContent=(data.conf_threshold*100).toFixed(0)+'%';
+    document.getElementById('model-chip').textContent='YOLOv8 · '+name;
+  }catch(e){}
+}
+loadModelInfo();loadHistory();
+</script>
+</body>
+</html>
