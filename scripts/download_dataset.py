@@ -14,7 +14,7 @@ from pathlib import Path
 from roboflow import Roboflow
 
 # ─────────────────────────────────────────────────────────────
-ROBOFLOW_API_KEY = "RL4YEU2i3GZafb3nrHZl"
+
 
 DATASETS = [
     {
