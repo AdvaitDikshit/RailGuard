@@ -1,5 +1,4 @@
-"""
-Dataset Downloader for Railway Crack Detection
+"""Dataset Downloader for Railway Crack Detection
 Downloads and merges multiple datasets from Roboflow
 FIXED: handles zip download manually to avoid SDK unzip bug
 """
